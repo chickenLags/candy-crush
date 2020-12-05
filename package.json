@@ -1,0 +1,16 @@
+{
+  "name": "candy-crush",
+  "version": "1.0.0",
+  "description": "candy crush building challenge",
+  "main": "main.js",
+  "scripts": {
+    "build": "browserify game/main.js -o bundle.js",
+    "watch": "watchify game/main.js -o bundle.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^17.0.0",
+    "watchify": "^3.11.1"
+  }
+}
