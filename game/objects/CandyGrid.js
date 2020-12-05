@@ -12,7 +12,7 @@ class CandyGrid {
 
         this.rowAndColCount = 8;
         this.candySize = this.gridSize / this.rowAndColCount;
-        this.image = new Image();
+        
         this.initializeImage();
 
         this.grid = [];
@@ -28,6 +28,7 @@ class CandyGrid {
     }
 
     initializeImage() {
+        this.image = new Image();
         this.loaded = false;
         this.image.onload = () => {
             this.loaded = true;
@@ -90,15 +91,8 @@ class CandyGrid {
         let prevCol = Math.floor(this.selected / this.rowAndColCount);
 
         // early exit on distance greater than one;
-        let mayMoveCol = (row === prevRow && Math.abs(col - prevCol) > 0) 
-        let mayMoveRow = (col === prevCol && Math.abs(row - prevRow) > 0) 
-
-        // console.log(row, col, prevRow, prevCol);
-        // col = mayMoveCol ? col + ((col - prevCol) / Math.abs(col - prevCol)) : col;
-        // row = mayMoveRow ? row + (row - prevRow) / Math.abs(row - prevRow) : row;
-
-        // console.log(row, col);
-        
+        let mayMoveCol = (row === prevRow && Math.abs(col - prevCol) === 1);
+        let mayMoveRow = (col === prevCol && Math.abs(row - prevRow) === 1);        
 
         let neighbouring = mayMoveCol || mayMoveRow;
 
@@ -108,95 +102,91 @@ class CandyGrid {
         }
 
         [this.grid[row][col], this.grid[prevRow][prevCol]] = [this.grid[prevRow][prevCol], this.grid[row][col]]
+
+        this.moving = 2;
+
         this.grid[row][col].onfinishedAnimation = this.match3;
+        this.grid[prevRow][prevCol].onfinishedAnimation = this.match3;
 
         this.selected = -1;
     }
 
     update(elapsed, offset) {
-        // this.clearCandies();
+        let falling = 0;
+        let marked = [];
 
         for (let rowIndex = 0; rowIndex < this.rowAndColCount; rowIndex++) {
             for (let colIndex = 0; colIndex < this.rowAndColCount; colIndex++) {
                 const candy = this.grid[rowIndex][colIndex];
-                candy.update(elapsed, rowIndex, colIndex, this.deathCallback);
+                candy.update(elapsed, rowIndex, colIndex);
+
+                if (candy.rowIndex != rowIndex || candy.colIndex != colIndex || candy.justCreated) {
+                    ++falling;
+                }
+
+                if (candy.markedForDeath) {
+                    marked.push(candy);
+                }
             }
         }
+
+        if (falling == 0 && marked.length > 0) {
+            console.log(marked.map(m => [m.rowIndex, m.colIndex]));
+            // debugger;
+            let removedCoords = this.clearCandies(marked);
+            this.fillGrid(removedCoords);
+            this.resetRowStack();
+            
+        }
     }
 
-    deathCallback = (candy) => {
-        
-        // this.candiesToBeRemoved.push(candy);
+    clearCandies(marked) {
+        let removedCoords = [];
 
-        if (--this.currentlyFalling <= 0) {
-            this.currentlyFalling = 0;
-            this.match3();
+        for(let i = 0; i < marked.length; ++i) {
+            let candy = marked[i];
+
+            this.grid[candy.rowIndex][candy.colIndex] = null;
+            removedCoords.push([candy.rowIndex, candy.colIndex]);
+            --this.rowStack[candy.rowIndex];
         }
 
-
-        let newCandyValue = Math.round(Math.random() * 4);
-        
-        let originalOldCandyColIndex = candy.colIndex;
-
-        
-        for (originalOldCandyColIndex; originalOldCandyColIndex > 0; originalOldCandyColIndex--) {
-            this.grid[candy.rowIndex][originalOldCandyColIndex] = this.grid[candy.rowIndex][originalOldCandyColIndex - 1]
-        }
-
-
-        this.grid[candy.rowIndex][0] = new Candy(newCandyValue, new Vector(candy.position.x, this.rowStack[candy.rowIndex]-- * this.candySize), this.candySize, candy.rowIndex, candy.colIndex);
-        this.grid[candy.rowIndex][0].onfinishedAnimation = () => this.resetRowStack();
+        removedCoords.sort((a,b) => b.colIndex - a.colIndex);
+        return removedCoords;
     }
 
-    // clearCandies() {
-    //     if (--this.currentlyFalling <= 0) {
-    //         this.currentlyFalling = 0;
-    //         // this.match3();
-    //     }
+    fillGrid(removedCoords) {
 
-    //     let ci = 0;
-    //     let cl = this.candiesToBeRemoved.length;
+        for(let i = 0; i < removedCoords.length; ++i) {
+            const coords = removedCoords[i];
+            const rowIndex = coords[0];
+            const colIndex = coords[1];
+            let posX = rowIndex * this.candySize;
 
-    //     for(ci; ci < cl; ci ++) {
-    //         this.clearCandy(this.candiesToBeRemoved[ci]);
+            let newCandyValue = Math.round(Math.random() * 4);
+            let originalOldCandyColIndex = colIndex;
+            
+            for (originalOldCandyColIndex; originalOldCandyColIndex > 0; originalOldCandyColIndex--) {
+                this.grid[rowIndex][originalOldCandyColIndex] = this.grid[rowIndex][originalOldCandyColIndex - 1]
+            }
+            
 
-    //     }
+            let newCandyPosition = new Vector(posX, this.rowStack[rowIndex]-- * this.candySize);
+            this.grid[rowIndex][0] = new Candy(newCandyValue, newCandyPosition, this.candySize, rowIndex, colIndex);
+        }
 
-    //     this.candiesToBeRemoved = [];
-
-        
-    // }
-
-    // clearCandy(candy) {
-    //     let newCandyValue = Math.round(Math.random() * 4);
-    //     let originalOldCandyColIndex = candy.colIndex;
-    // }
-
-    // fillGapsWithCandies() {
-    //     let ri = 0;
-    //     let rl = this.grid[row]length;
-
-    //     for (originalOldCandyColIndex; originalOldCandyColIndex > 0; originalOldCandyColIndex--) {
-    //         this.grid[candy.rowIndex][originalOldCandyColIndex] = this.grid[candy.rowIndex][originalOldCandyColIndex - 1]
-    //     }
-
-
-    //     this.grid[candy.rowIndex][0] = new Candy(newCandyValue, new Vector(candy.position.x, this.rowStack[candy.rowIndex]-- * this.candySize), this.candySize, candy.rowIndex, candy.colIndex);
-    //     this.grid[candy.rowIndex][0].onfinishedAnimation = () => this.resetRowStack();
-    // }
+    }
 
     resetRowStack() {
         for(let i = 0; i < this.rowAndColCount; i++) {
             this.rowStack[i] = -1;
         }
-
-        
-
     }
 
-    match3 = () => {
-        
-        
+    match3 = () => {  
+        if (--this.moving != 0) {
+            return;
+        }
         for (let rowIndex = 0; rowIndex < this.rowAndColCount; rowIndex++) {
             for (let colIndex = 0; colIndex < this.rowAndColCount; colIndex++) {
                 const candy = this.grid[rowIndex][colIndex];

@@ -19,9 +19,6 @@ class Candy extends Entity {
 
     update(elapsed, targetRowIndex, targetColIndex, deathCallBack) {
         if (this.rowIndex == targetRowIndex && this.colIndex == targetColIndex && !this.justCreated) {
-            if (this.markedForDeath) {
-                deathCallBack(this);
-            }
             return;
         }
 

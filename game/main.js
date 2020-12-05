@@ -23,6 +23,7 @@ let endTime = startTime = elapsedTime = Date.now();
  */
 // let intervalHandle = setInterval(
 function gameLoop () { 
+    
     // takes time into account
     startTime = Date.now();
     elapsedTime = (startTime - endTime) / 1000;
